@@ -51,11 +51,49 @@ Key features:
    - Download the appropriate version for your Chrome browser from [ChromeDriver website](https://sites.google.com/chromium.org/driver/)
    - Add it to your PATH or specify its location in the script
 
+## Usage
 
+You can run the script with various command-line arguments to customize its behavior:
+
+### Basic Usage
+
+```bash
+python blogs_to_md.py
+```
+
+This will use the default settings:
+- Base URL: https://semgrep.dev/blog/
+- Output Directory: ./blog_posts/
+
+### Command Line Options
+
+```bash
+# Specify a different blog URL to scrape
+python blogs_to_md.py --base-url https://example.com/blog/
+
+# Specify a custom output directory
+python blogs_to_md.py --output-dir my_blog_posts
+
+# Combine both options
+python blogs_to_md.py --base-url https://example.com/blog/ --output-dir my_blog_posts
+```
+
+Available options:
+- `--base-url`: The base URL of the blog to scrape (default: https://semgrep.dev/blog/)
+- `--output-dir`: Directory where markdown files will be saved (default: blog_posts)
+
+To see all available options:
+```bash
+python blogs_to_md.py --help
+```
 
 ## How It Works
 
-1. **URL Discovery**: The tool uses Selenium to load the blog index page and scroll through it to discover all blog post URLs.
+1. **Configuration**: The tool accepts command-line arguments to customize:
+   - The base URL of the blog to scrape
+   - The output directory for markdown files
+
+2. **URL Discovery**: The tool uses Selenium to load the specified blog index page and scroll through it to discover all blog post URLs.
 2. **Content Extraction**: For each URL found, the tool:
    - Sends an HTTP request to fetch the page content
    - Parses the HTML using BeautifulSoup

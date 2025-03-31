@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import argparse
 
 def extract_blog_content(url):
     """
@@ -180,10 +181,24 @@ def get_blog_urls(base_url="https://semgrep.dev/blog/"):
         return []
 
 if __name__ == "__main__":
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description='Scrape blog posts and convert them to markdown files.')
+    parser.add_argument('--base-url', 
+                      default='https://semgrep.dev/blog/',
+                      help='Base URL of the blog to scrape (default: https://semgrep.dev/blog/)')
+    parser.add_argument('--output-dir', 
+                      default='blog_posts',
+                      help='Directory to save markdown files (default: blog_posts)')
+    
+    args = parser.parse_args()
+    
     # Get blog URLs by crawling the blog page
-    blog_urls = get_blog_urls()
+    blog_urls = get_blog_urls(base_url=args.base_url)
     if blog_urls:
         print(f"Found {len(blog_urls)} blog posts")
-        process_blog_urls(blog_urls)
+        for url in blog_urls:
+            print(f"Processing {url}")
+            content = extract_blog_content(url)
+            save_blog_to_file(url, content, output_dir=args.output_dir)
     else:
         print("No blog URLs found")
