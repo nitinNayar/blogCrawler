@@ -28,17 +28,80 @@ def extract_blog_content(url):
         # Parse HTML content
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Remove script and style elements
-        for script in soup(["script", "style"]):
-            script.decompose()
+        # Remove script, style elements, and comments
+        for element in soup(["script", "style", "header", "footer", "nav"]):
+            element.decompose()
+        
+        # Try to find the main content using common blog content containers
+        # Method 1: Try common content containers by tag and class
+        potential_content_areas = []
+        
+        # Look for article tags (common in blogs)
+        for article in soup.find_all('article'):
+            potential_content_areas.append(('article', article))
+        
+        # Look for main tag
+        main_content = soup.find('main')
+        if main_content:
+            potential_content_areas.append(('main', main_content))
+        
+        # Look for common content class names
+        content_classes = ['content', 'post-content', 'entry-content', 'article-content', 
+                         'blog-content', 'post-body', 'article-body', 'blog-post', 
+                         'post', 'single-post', 'main-content', 'page-content']
+        
+        for class_name in content_classes:
+            elements = soup.find_all(class_=re.compile(class_name, re.I))
+            for el in elements:
+                potential_content_areas.append((f'class:{class_name}', el))
+        
+        # Method 2: Look for the div with most paragraph content (heuristic approach)
+        all_divs = soup.find_all('div')
+        for div in all_divs:
+            paragraphs = div.find_all('p')
+            if paragraphs and len(paragraphs) >= 3:  # At least 3 paragraphs to be considered content
+                text_length = sum(len(p.get_text()) for p in paragraphs)
+                potential_content_areas.append((f'div-with-{len(paragraphs)}-paragraphs', div, text_length))
+        
+        # Sort potential content areas by text length if available
+        content_candidates = []
+        for item in potential_content_areas:
+            if len(item) > 2:  # Items with text_length information
+                content_candidates.append((item[0], item[1], item[2]))
+            else:
+                # Calculate text length for items without it
+                text_length = len(item[1].get_text())
+                content_candidates.append((item[0], item[1], text_length))
+        
+        # Sort by text length (descending)
+        content_candidates.sort(key=lambda x: x[2], reverse=True)
+        
+        # Extract content from the best candidate
+        main_content_element = None
+        
+        if content_candidates:
+            print(f"Found {len(content_candidates)} potential content containers")
+            print(f"Selected container: {content_candidates[0][0]} with {content_candidates[0][2]} characters")
+            main_content_element = content_candidates[0][1]
             
-        # Get text content
-        text = soup.get_text()
+            # Extract text from the main content area
+            text = main_content_element.get_text()
+        else:
+            # Fallback: Use the whole body if no good candidates found
+            print("No specific content container found, extracting from body")
+            body = soup.find('body')
+            text = body.get_text() if body else soup.get_text()
         
         # Clean up text - remove blank lines and extra spacing
         lines = (line.strip() for line in text.splitlines())
         chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-        text = '\n'.join(chunk for chunk in chunks if chunk)
+        text = '\n\n'.join(chunk for chunk in chunks if chunk)
+        
+        # Add title if available
+        title = soup.find('title')
+        if title:
+            title_text = title.get_text().strip()
+            text = f"# {title_text}\n\n{text}"
         
         return text
         

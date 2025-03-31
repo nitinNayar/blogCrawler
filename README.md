@@ -124,16 +124,46 @@ python blogs_to_md.py --help
    - By default, identifies URLs containing "/blog/" that aren't the main blog index
    - Removes duplicate URLs
 
-4. **Content Extraction**: For each discovered URL, the tool:
+4. **Intelligent Content Extraction**: For each discovered URL, the tool:
    - Sends an HTTP request to fetch the page content
    - Parses the HTML using BeautifulSoup
-   - Removes unwanted elements like scripts and styles
-   - Extracts and cleans the text content
+   - **Intelligently identifies the main content area** using multiple methods:
+     - Looks for semantic HTML5 elements like `<article>` and `<main>`
+     - Searches for common blog content class names (e.g., "post-content", "entry-content")
+     - Uses a heuristic approach to find the div with the most paragraph content
+     - Ranks potential content areas by text length to select the best candidate
+   - Removes unwanted elements like headers, footers, navigation, scripts, and styles
+   - Extracts clean, formatted text with proper paragraph spacing
+   - Adds the page title as a Markdown heading
+   - Provides fallback mechanisms for reliable extraction on any blog platform
 
 5. **Storage**: Each blog post is saved as a markdown file with:
    - The original URL as a reference
    - Cleaned text content
    - Filename derived from the blog post slug
+
+## Features in Detail
+
+### Intelligent Content Extraction
+
+The tool uses a sophisticated multi-method approach to extract only the relevant content from blog posts, while filtering out navigation menus, sidebars, footers, and other non-content elements:
+
+1. **Semantic HTML Detection**: Identifies content based on semantic HTML5 elements that commonly contain the main content (`<article>`, `<main>`)
+
+2. **Class-based Detection**: Searches for elements with class names commonly used for blog content across various platforms
+
+3. **Heuristic Analysis**: Analyzes the page structure to find the div with the highest concentration of paragraphs and meaningful text
+
+4. **Content Ranking**: Uses text length and other metrics to rank potential content containers and select the most likely main content area
+
+5. **Fallback Mechanisms**: Includes multiple fallback strategies to ensure content is always extracted, even from non-standard blog layouts
+
+This intelligent extraction results in clean markdown files containing only the actual blog content, making them ideal for:
+- Reading without distractions
+- Text analysis
+- Training AI models
+- Knowledge management
+- Content preservation
 
 ## Ethical Considerations
 
