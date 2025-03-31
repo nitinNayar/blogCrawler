@@ -8,6 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 import argparse
+import re
 
 def extract_blog_content(url):
     """
@@ -90,12 +91,13 @@ def process_blog_urls(urls):
         content = extract_blog_content(url)
         save_blog_to_file(url, content)
         
-def get_blog_urls(base_url="https://semgrep.dev/blog/"):
+def get_blog_urls(base_url="https://semgrep.dev/blog/", url_pattern=None):
     """
-    Crawl Semgrep's blog page and extract all blog post URLs
+    Crawl blog page and extract all blog post URLs
     
     Args:
         base_url (str): Base URL of the blog
+        url_pattern (str): Optional regex pattern to identify blog posts
         
     Returns:
         list: List of blog post URLs
@@ -122,7 +124,6 @@ def get_blog_urls(base_url="https://semgrep.dev/blog/"):
             
             # Calculate new scroll height
             new_height = driver.execute_script("return document.body.scrollHeight")
-            print(f"Scrolled to height: {new_height}")
             
             # Break if no more new content
             if new_height == last_height:
@@ -137,32 +138,20 @@ def get_blog_urls(base_url="https://semgrep.dev/blog/"):
         for link in soup.find_all('a'):
             href = link.get('href')
             if href:
-                print(f"\nProcessing link: {href}")
-                
                 # Clean up the URL
                 if not href.startswith('http'):
-                    href = f"https://semgrep.dev{href}" if not href.startswith('/') else f"https://semgrep.dev{href}"
+                    base_domain = urlparse(base_url).netloc
+                    href = f"https://{base_domain}{href}" if not href.startswith('/') else f"https://{base_domain}{href}"
                 
-                print(f"Cleaned URL: {href}")
-                
-                # Check if it's a blog post URL using multiple criteria
-                is_blog_post = False
-                if '/blog/' in href:
-                    # Check different blog URL patterns
-                    if any(str(year) in href for year in range(2020, 2025)):
-                        is_blog_post = True
-                        print(f"Matched year pattern: {href}")
-                    elif href.count('/') >= 4:
-                        is_blog_post = True
-                        print(f"Matched path depth pattern: {href}")
-                    elif any(month in href.lower() for month in ['january', 'february', 'march', 'april', 'may', 'june', 
-                                                               'july', 'august', 'september', 'october', 'november', 'december']):
-                        is_blog_post = True
-                        print(f"Matched month pattern: {href}")
-                
-                if is_blog_post:
-                    print(f"Adding blog URL: {href}")
-                    blog_urls.append(href)
+                # Check if it's a blog post URL
+                if url_pattern:
+                    # Use custom pattern if provided
+                    if re.search(url_pattern, href):
+                        blog_urls.append(href)
+                else:
+                    # Default behavior: match URLs containing /blog/ that aren't the base blog URL
+                    if '/blog/' in href and href != base_url:
+                        blog_urls.append(href)
         
         # Close the browser
         driver.quit()
@@ -189,11 +178,13 @@ if __name__ == "__main__":
     parser.add_argument('--output-dir', 
                       default='blog_posts',
                       help='Directory to save markdown files (default: blog_posts)')
+    parser.add_argument('--url-pattern',
+                      help='Optional regex pattern to identify blog post URLs (e.g. "/blog/\\d{4}/")')
     
     args = parser.parse_args()
     
     # Get blog URLs by crawling the blog page
-    blog_urls = get_blog_urls(base_url=args.base_url)
+    blog_urls = get_blog_urls(base_url=args.base_url, url_pattern=args.url_pattern)
     if blog_urls:
         print(f"Found {len(blog_urls)} blog posts")
         for url in blog_urls:

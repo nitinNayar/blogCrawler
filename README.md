@@ -74,13 +74,17 @@ python blogs_to_md.py --base-url https://example.com/blog/
 # Specify a custom output directory
 python blogs_to_md.py --output-dir my_blog_posts
 
-# Combine both options
-python blogs_to_md.py --base-url https://example.com/blog/ --output-dir my_blog_posts
+# Use a custom regex pattern to identify blog posts
+python blogs_to_md.py --url-pattern "/blog/\d{4}/"
+
+# Combine multiple options
+python blogs_to_md.py --base-url https://example.com/blog/ --output-dir my_blog_posts --url-pattern "/blog/\d{4}/"
 ```
 
 Available options:
 - `--base-url`: The base URL of the blog to scrape (default: https://semgrep.dev/blog/)
 - `--output-dir`: Directory where markdown files will be saved (default: blog_posts)
+- `--url-pattern`: Optional regex pattern to identify blog post URLs (e.g. "/blog/\d{4}/" to match URLs containing /blog/ followed by a 4-digit year)
 
 To see all available options:
 ```bash
@@ -92,14 +96,41 @@ python blogs_to_md.py --help
 1. **Configuration**: The tool accepts command-line arguments to customize:
    - The base URL of the blog to scrape
    - The output directory for markdown files
+   - Custom regex patterns to identify blog post URLs
 
-2. **URL Discovery**: The tool uses Selenium to load the specified blog index page and scroll through it to discover all blog post URLs.
-2. **Content Extraction**: For each URL found, the tool:
+2. **Dynamic Content Loading with Selenium**: 
+   Many modern blogs load content dynamically as the user scrolls down the page (infinite scrolling). To handle this:
+   
+   - The tool uses Selenium WebDriver to launch a headless Chrome browser
+   - It navigates to the specified blog index page
+   - It executes JavaScript to scroll to the bottom of the page repeatedly
+   - After each scroll, it waits for new content to load (2 seconds by default)
+   - It continues scrolling until no new content appears (detected by comparing page heights)
+   - Once all content is loaded, it extracts the fully rendered HTML
+   
+   This approach ensures that **all** blog posts are discovered, even those that would only appear after scrolling down multiple times on a real browser.
+   
+   Benefits:
+   - **Complete Data Collection**: Captures all blog posts, not just those visible on initial page load
+   - **Works with Modern Websites**: Compatible with JavaScript-heavy sites and single-page applications
+   - **Automation**: No manual intervention needed to scroll and discover content
+   - **Headless Operation**: Runs in the background without displaying a browser window
+   - **Cross-Platform**: Works on any system that supports Chrome and ChromeDriver
+
+3. **URL Discovery and Filtering**:
+   - Extracts all links from the fully loaded page
+   - Cleans and normalizes URLs to ensure they're properly formatted
+   - Applies custom regex patterns (if provided) to identify blog post URLs
+   - By default, identifies URLs containing "/blog/" that aren't the main blog index
+   - Removes duplicate URLs
+
+4. **Content Extraction**: For each discovered URL, the tool:
    - Sends an HTTP request to fetch the page content
    - Parses the HTML using BeautifulSoup
    - Removes unwanted elements like scripts and styles
-   - Extracts the clean text content
-3. **Storage**: Each blog post is saved as a markdown file with:
+   - Extracts and cleans the text content
+
+5. **Storage**: Each blog post is saved as a markdown file with:
    - The original URL as a reference
    - Cleaned text content
    - Filename derived from the blog post slug
