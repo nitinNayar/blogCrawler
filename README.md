@@ -81,16 +81,6 @@ Please use this tool responsibly and ethically:
 - Some websites use anti-scraping techniques that may prevent successful extraction
 - JavaScript-heavy sites might not render completely in headless mode
 
-## Extending the Tool
-
-You can extend this tool to add features like:
-
-- Custom content extractors for specific blog platforms
-- Metadata extraction (author, date, tags)
-- Image downloading
-- Conversion to different formats (PDF, HTML, etc.)
-- Integration with NLP libraries for content analysis
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
